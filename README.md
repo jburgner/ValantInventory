@@ -12,8 +12,9 @@ xUnit
 
 
 Running Solution:
-More information forthcoming.  Can be debugged and tested from within VS 2015.  Will add command line
-dotnet run command information after some further testing.
+With the .NET Core SLI (https://docs.microsoft.com/en-us/dotnet/articles/core/tools/index)
+the project can be run with the "dotnet run" command.  Can also be debugged and tested from
+within VS 2015.
 
 Endpoints:
 
