@@ -13,8 +13,8 @@ xUnit
 
 Running Solution:
 With the .NET Core SLI (https://docs.microsoft.com/en-us/dotnet/articles/core/tools/index)
-the project can be run with the "dotnet run" command.  Can also be debugged and tested from
-within VS 2015.
+the ValantInventoryExerciseCore project can be run with the "dotnet run" command.  Can also
+be debugged and tested from within VS 2015.
 
 Endpoints:
 
