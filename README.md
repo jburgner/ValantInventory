@@ -5,11 +5,12 @@ More information forthcoming.  Can be debugged and tested from within VS 2015.  
 dotnet run command information after some further testing.
 
 Endpoints:
+
 POST    /api/items        - create a new item with a unique label
 
 DELETE  /api/items/label  - delete an existing item by label
 
-GET     /api/items/label  - not yet implemented, but post should have a reference to return upon item creation
+GET     /api/items/label  - not yet implemented per specification, but post should have a reference to return upon item creation
 
 Notifications:
 A message is logged to the console when a message is deleted by the /api/items/label endpoint or when
