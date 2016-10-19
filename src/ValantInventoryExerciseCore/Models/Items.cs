@@ -12,5 +12,7 @@ namespace ValantInventoryExerciseCore.Models
         public string Label { get; set; }
         public DateTime Expiration { get; set; }
         public int ItemType { get; set; }
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
     }
 }

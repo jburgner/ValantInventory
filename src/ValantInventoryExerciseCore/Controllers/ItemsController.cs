@@ -16,39 +16,11 @@ namespace ValantInventoryExerciseCore.Controllers
 
         private readonly InventoryApiContext _context;
         private readonly TextWriter _writer;
-        private readonly int _expirationCheckInterval;
-        public int CheckCount;
+        
 
-        private void CheckForExpired()
-        {
-
-            var me = this;
-
-            Timer timer = new Timer((callbackState) => {
-
-                me.CheckCount++;
-
-                try
-                {
-                    var context = (InventoryApiContext)callbackState;
-
-                    var itemsToRemove = context.Items.Where(i => i.Expiration < DateTime.UtcNow);
-
-                    itemsToRemove
-                        .ForEachAsync(i =>
-                           Console.WriteLine("Item " + i.Label + " expired at " + i.Expiration.ToString())
-                        );
-                    context.Items.RemoveRange(itemsToRemove);
-                    context.SaveChanges();
-                }catch(ObjectDisposedException ex)
-                {
-                    //for now ignore ObjectDisposedException exceptions
-                }
-
-            }, me._context, _expirationCheckInterval, _expirationCheckInterval);
-        }
-
-        public ItemsController(InventoryApiContext context, int ExpirationCheckInterval = 20000, TextWriter writer = null)
+        // The optional parameter for the injection of a writer dependency is for the
+        // testing of console output.
+        public ItemsController(InventoryApiContext context, TextWriter writer = null)
         {
             if(!Object.ReferenceEquals(null, writer)) { 
                 _writer = writer;
@@ -56,10 +28,9 @@ namespace ValantInventoryExerciseCore.Controllers
             }
   
             _context = context;
-            _expirationCheckInterval = ExpirationCheckInterval;
-            CheckForExpired();
         }
 
+        //not yet implemented
         /*[HttpGet("{Label}", Name = "GetItem")]
         public async Task<IActionResult> Get(string Label)
         {
@@ -103,7 +74,6 @@ namespace ValantInventoryExerciseCore.Controllers
         // POST api/items
         public IActionResult Post([FromBody]Items item)
         {
-
             if (_context.Items.Where(i => i.Label.Equals(item.Label)).Count() == 0)
             {
 

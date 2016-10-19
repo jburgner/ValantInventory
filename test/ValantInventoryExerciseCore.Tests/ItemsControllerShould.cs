@@ -12,14 +12,16 @@ using System.IO;
 
 namespace Tests
 {
-    public class ItemsControllerTests
+    public class ItemsControllerShould
     {
 
         private InventoryApiContext SetUpContext(IEnumerable<Items> items)
         {
 
+            //set up the mock context for new tests
             var dbCOB = new DbContextOptionsBuilder<InventoryApiContext>();
 
+            //use a different database for testing than the default in memory database
             dbCOB.UseInMemoryDatabase("TestDB");
 
             var mockContext = new InventoryApiContext(dbCOB.Options);
@@ -27,6 +29,7 @@ namespace Tests
             //delete any existing test items
             mockContext.Items.RemoveRange(mockContext.Items);
             mockContext.SaveChanges();
+            //if items were sent as a parameter, add them to the database
             if (!Object.ReferenceEquals(items, null))
             {
                 mockContext.Items.AddRange(items);
@@ -38,7 +41,7 @@ namespace Tests
         }
 
         [Fact]
-        public void DeleteByLabel_ReturnsAViewResult_OfOK_WhenLabelExists() 
+        public void ReturnAViewResult_OfOK_FromDeleteByLabel_WhenLabelExists() 
         {
 
             //Arrange
@@ -62,7 +65,7 @@ namespace Tests
 
             var stringWriter = new StringWriter();
             var mockContext = SetUpContext(data);
-            var itemsController = new ItemsController(mockContext, 20000, stringWriter);
+            var itemsController = new ItemsController(mockContext, stringWriter);
 
             //Action
             var result = itemsController.Delete(actionLabel);
@@ -73,7 +76,7 @@ namespace Tests
         }
 
         [Fact]
-        public void DeleteByLabel_DeletesItem_WhenLabelExists()
+        public void DeleteItem_FromDeleteByLabel_WhenLabelExists()
         {
 
             //Arrange
@@ -89,10 +92,8 @@ namespace Tests
             var data = new List<Items>
             {
                 itemToDelete,
-
                 new Items { Label = "Don't Delete Me!", Expiration = DateTime.UtcNow.AddYears(1), ItemType = 1 }
             }.AsQueryable();
-
 
             var mockContext = SetUpContext(data);
             var itemsController = new ItemsController(mockContext);
@@ -106,7 +107,7 @@ namespace Tests
         }
 
         [Fact]
-        public void DeleteByLabel_ReturnsAViewResult_OfNotFound_WhenLabelDoesntExists()
+        public void ReturnAViewResult_OfNotFound_FromDeleteByLabel_WhenLabelDoesntExists()
         {
 
             //Arrange
@@ -122,7 +123,6 @@ namespace Tests
             var data = new List<Items>
             {
                 itemToDelete,
-
                 new Items { Label = "Don't Delete Me!", Expiration = DateTime.UtcNow.AddYears(1), ItemType = 1 }
             }.AsQueryable();
 
@@ -140,7 +140,7 @@ namespace Tests
         }
 
         [Fact]
-        public void PostNewItem_InsertsNew_Item_toDB()
+        public void InsertANewItemToDB_FromPostNewItem()
         {
             //Arrange
             var itemToAdd = new Items
@@ -163,7 +163,7 @@ namespace Tests
         }
 
         [Fact]
-        public void PostNewItem_ReturnsAViewResult_ofOK()
+        public void ReturnsStatusCode_ofCreated_FromPostNewItem_()
         {
             //Arrange
             var itemToAdd = new Items
@@ -186,7 +186,7 @@ namespace Tests
         }
 
         [Fact]
-        public void PostNewItemwithDuplicateLabel_Returns409()
+        public void ReturnStatusCode_OfConflict_FromPostNewItem_WhenLabelIsDuplicate()
         {
             //Arrange
             var itemToAdd = new Items
@@ -206,31 +206,12 @@ namespace Tests
             //Assert
             StatusCodeResult scr = Assert.IsType<StatusCodeResult>(result);
             Assert.Equal(scr.StatusCode, 409);
-        }
-
-        [Fact]
-        public void PostNewItemwithDuplicateLabel_DoesNotInserttoDB()
-        {
-            //Arrange
-            var itemToAdd = new Items
-            {
-                Label = "Add Me",
-                Expiration = DateTime.UtcNow.AddSeconds(1),
-                ItemType = 1
-
-            };
-
-            var mockContext = SetUpContext(new List<Items> { itemToAdd });
-            var itemsController = new ItemsController(mockContext);
-
-            //Action
-            var result = itemsController.Post(itemToAdd);
-
-            //Assert
+            //verify that no records were added to database
             Assert.Equal(1, mockContext.Items.Count());
         }
 
-        [Fact]
+        //Moved to Integration tests since Controller not correct context for monitoring expirations
+        /*[Fact]
         public async Task ItemExpiring_Triggers_NotificationToConsole()
         {
             //Arrange
@@ -250,12 +231,12 @@ namespace Tests
 
             //Action
             var result = itemsController.Post(itemToAdd);
-            await Task.Delay(250);
+            await Task.Delay(3000);
 
             //Assert
             Assert.Equal(0, mockContext.Items.Count());
             Assert.Equal(stExpectedConsoleOut, stringWriter.ToString().Substring(0, stExpectedConsoleOut.Length));
             
-        }
+        }*/
     }
 }
