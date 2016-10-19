@@ -6,7 +6,9 @@ dotnet run command information after some further testing.
 
 Endpoints:
 POST    /api/items        - create a new item with a unique label
+
 DELETE  /api/items/label  - delete an existing item by label
+
 GET     /api/items/label  - not yet implemented, but post should have a reference to return upon item creation
 
 Notifications:
