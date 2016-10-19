@@ -25,7 +25,8 @@ injection.
 
 The ItemsController accepts an optional parameter for injecting a TextWriter, allowing the
 interception of Console activity for the unit tests.  Other means of logging and notification
-will need to be investigated.
+will need to be investigated.  The Entity Framework queries are conducted syncronously because of
+in-memory database responsiveness.  Once final data store is implemented, 
 
 The monitoring of expired items is handled in Startup.cs.  This allows for the direct monitoring
 of the dbContext without having to work around the life-cycle of the dbContext in the controller.
@@ -37,4 +38,6 @@ concurrency issues if the interval is too short, (or at any point when experienc
 This will need to be addressed in order to have large data sets. In the short term, the interval
 can be tuned (default is every 5 seconds). Manual testing indicates that the monitoring is working,
 but an automated integration test using Microsoft.AspNetCore.TestHost.TestServer is still eluding me.
+Depending on usage profile, a task scheduler with tasks scheduled upon item creation to execute at
+the item expiration date may be more efficient and much easier to unit test.
 
