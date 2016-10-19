@@ -43,35 +43,38 @@ namespace ValantInventoryExerciseCore.Tests
                 ItemType = 1
 
             };
-
-            //wait for server to initialize
-            while (Object.ReferenceEquals(null, _client))
-            {
-                await Task.Delay(1000);
-            }
-            
-            var stPayload = await Task.Run(() => JsonConvert.SerializeObject(itemToAdd));
-            var httpContent = new StringContent(stPayload, Encoding.UTF8, "application/json");
+            HttpResponseMessage response = null;
 
             //Act
-            var response = await _client.PostAsync(request, httpContent);
+            await Task.Run(async ()=> {
 
-            //Retry post.  If proper item expiration has taken place, then it should return 201.
-            //Otherwise, it will return 404.
-            for (int i = 0; i < 40; i++)
-            {
-                await Task.Delay(1000);
-                //Thread.Sleep(1000);
-
-                //retry post
-                httpContent = new StringContent(stPayload, Encoding.UTF8, "application/json");
-                response = await _client.PostAsync(request, httpContent);
-
-                if (response.StatusCode == HttpStatusCode.Created)
+                //wait for server to initialize
+                while (Object.ReferenceEquals(null, _client))
                 {
-                    break;
+                    Thread.Sleep(1000);
                 }
-            }
+                var stPayload = JsonConvert.SerializeObject(itemToAdd);
+                var httpContent = new StringContent(stPayload, Encoding.UTF8, "application/json");
+                response = await _client.PostAsync(request, httpContent);
+                
+
+
+                //Retry post.  If proper item expiration has taken place, then it should return 201.
+                //Otherwise, it will return 404.
+                for (int i = 0; i < 40; i++)
+                {
+                    Thread.Sleep(1000);
+
+                    //retry post
+                    httpContent = new StringContent(stPayload, Encoding.UTF8, "application/json");
+                    response = await _client.PostAsync(request, httpContent);
+
+                    if (response.StatusCode == HttpStatusCode.Created)
+                    {
+                        break;
+                    }
+                }
+            });
 
             //Assert
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);

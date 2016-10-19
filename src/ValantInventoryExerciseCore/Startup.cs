@@ -37,6 +37,7 @@ namespace ValantInventoryExerciseCore
             // Add framework services.
             services.AddApplicationInsightsTelemetry(Configuration);
 
+            //change this line in order to use a more suitable long-term data store (e.g. Redis)
             services.AddDbContext<InventoryApiContext>(opt => opt.UseInMemoryDatabase());
 
             services.AddMvc();
