@@ -50,7 +50,7 @@ namespace ValantInventoryExerciseCore.Controllers
         //DELETE: api/items/Label
         public IActionResult Delete(string Label)
         {
-
+            //TODO: test async/await for performance with large datasets and heavy traffic
             var items = _context.Items.Where(i => i.Label.Equals(Label));
             
             if(items.Count() == 1)
@@ -74,6 +74,7 @@ namespace ValantInventoryExerciseCore.Controllers
         // POST api/items
         public IActionResult Post([FromBody]Items item)
         {
+            //TODO: test async/await for performance with large datasets and heavy traffic
             if (_context.Items.Where(i => i.Label.Equals(item.Label)).Count() == 0)
             {
 
