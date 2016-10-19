@@ -1,5 +1,16 @@
 # ValantInventory
 
+Environment:
+
+ASP.NET Core
+
+Entity Framework Core
+
+InMemory
+
+xUnit
+
+
 Running Solution:
 More information forthcoming.  Can be debugged and tested from within VS 2015.  Will add command line
 dotnet run command information after some further testing.
@@ -12,9 +23,11 @@ DELETE  /api/items/label  - delete an existing item by label
 
 GET     /api/items/label  - not yet implemented per specification, but post should have a reference to return upon item creation
 
+
 Notifications:
 A message is logged to the console when a message is deleted by the /api/items/label endpoint or when
 an item in the database expires (has an Expiration earlier than the current time).
+
 
 Code Structure:
 The application utilizes a  in-memory database (Microsoft.EntityFrameworkCore.InMemory)
@@ -36,7 +49,9 @@ will need to be investigated and implemented, preferably running on a different 
 of scalability.  Depending on usage profile, a task scheduler with tasks scheduled upon item creation
 to execute at the item expiration date may be more efficient and much easier to unit test.  The
 monitoring itself is carried out in a recurring Task thread.  This could create concurrency issues
-if the interval is too short, (or at any point when experiencing heavy traffic). This will need to be addressed in order to have large data sets. In the short term, the interval can be tuned (default is every 5 seconds).
-Manual testing indicates that the monitoring is working, but an automated integration test using Microsoft.AspNetCore.TestHost.TestServer is still eluding me.
+if the interval is too short, (or at any point when experiencing heavy traffic). This will need to
+be addressed in order to have large data sets. In the short term, the interval can be tuned (default
+is every 5 seconds). Manual testing indicates that the monitoring is working, but an automated
+integration test using Microsoft.AspNetCore.TestHost.TestServer is still eluding me.
 
 
