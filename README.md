@@ -33,11 +33,10 @@ of the dbContext without having to work around the life-cycle of the dbContext i
 This may create issues in the long term as a dbContext instance is kept active over time.  I am
 not satisfied with the present methodology.  It is not easily unit tested, and an alternate solution
 will need to be investigated and implemented, preferably running on a different system for the sake
-of scalability.  The monitoring itself is carried out in a recurring Task thread.  This could create
-concurrency issues if the interval is too short, (or at any point when experiencing heavy traffic).
-This will need to be addressed in order to have large data sets. In the short term, the interval
-can be tuned (default is every 5 seconds). Manual testing indicates that the monitoring is working,
-but an automated integration test using Microsoft.AspNetCore.TestHost.TestServer is still eluding me.
-Depending on usage profile, a task scheduler with tasks scheduled upon item creation to execute at
-the item expiration date may be more efficient and much easier to unit test.
+of scalability.  Depending on usage profile, a task scheduler with tasks scheduled upon item creation
+to execute at the item expiration date may be more efficient and much easier to unit test.  The
+monitoring itself is carried out in a recurring Task thread.  This could create concurrency issues
+if the interval is too short, (or at any point when experiencing heavy traffic). This will need to be addressed in order to have large data sets. In the short term, the interval can be tuned (default is every 5 seconds).
+Manual testing indicates that the monitoring is working, but an automated integration test using Microsoft.AspNetCore.TestHost.TestServer is still eluding me.
+
 
