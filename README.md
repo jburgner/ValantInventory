@@ -31,6 +31,7 @@ an item in the database expires (has an Expiration earlier than the current time
 
 
 Code Structure:
+
 The application utilizes a  in-memory database (Microsoft.EntityFrameworkCore.InMemory)
 to store the items.  This is a temporary measure and will require a more robust and
 scalable datastore (e.g. Redis) as a long-term solution.  This change can be made by
@@ -40,9 +41,17 @@ injection.
 The ItemsController accepts an optional parameter for injecting a TextWriter, allowing the
 interception of Console activity for the unit tests.  Other means of logging and notification
 will need to be investigated.  The Entity Framework queries are conducted syncronously because of
-in-memory database responsiveness.  Once final data store is implemented, 
+in-memory database responsiveness.  Once final data store is implemented, testing will need to
+be conducted to determine if async/await is appropriate for data store operations.
 
-The monitoring of expired items is handled in Startup.cs.  This allows for the direct monitoring
+
+!!!!
+The following is out of sync with the state of the code.  Will rectify soon:
+!!!!
+
+The monitoring of expired items...
+
+is handled in Startup.cs.  This allows for the direct monitoring
 of the dbContext without having to work around the life-cycle of the dbContext in the controller.
 This may create issues in the long term as a dbContext instance is kept active over time.  I am
 not satisfied with the present methodology.  It is not easily unit tested, and an alternate solution
