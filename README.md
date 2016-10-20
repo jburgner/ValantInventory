@@ -44,24 +44,21 @@ will need to be investigated.  The Entity Framework queries are conducted syncro
 in-memory database responsiveness.  Once final data store is implemented, testing will need to
 be conducted to determine if async/await is appropriate for data store operations.
 
+The monitoring of expired items is handled in the ItemMonitor class, instantiated in the database
+context using dependency injection.  Every monitoring period (currently configured for an interval
+of 7 days), a timer is set for every item set to expire within the next interval + 2 days (currently
+9 days).  When the timer is triggered, a message is written to the console.  Newly added items are
+given their own timer if they fall within the configured interval.  Newly deleted items have their
+timer cancelled if they have one.  Timers are tested by mocking timers through a timer factory.
+Mock timers invoke their callback syncronously at instantiation. 
 
-!!!!
-The following is out of sync with the state of the code.  Will rectify soon:
-!!!!
-
-The monitoring of expired items...
-
-is handled in Startup.cs.  This allows for the direct monitoring
-of the dbContext without having to work around the life-cycle of the dbContext in the controller.
-This may create issues in the long term as a dbContext instance is kept active over time.  I am
-not satisfied with the present methodology.  It is not easily unit tested, and an alternate solution
-will need to be investigated and implemented, preferably running on a different system for the sake
-of scalability.  Depending on usage profile, a task scheduler with tasks scheduled upon item creation
-to execute at the item expiration date may be more efficient and much easier to unit test.  The
-monitoring itself is carried out in a recurring Task thread.  This could create concurrency issues
-if the interval is too short, (or at any point when experiencing heavy traffic). This will need to
-be addressed in order to have large data sets. In the short term, the interval can be tuned (default
-is every 5 seconds). Manual testing indicates that the monitoring is working, but an automated
-integration test using Microsoft.AspNetCore.TestHost.TestServer is still eluding me.
+Depending on usage profile and the immediacy requirements of the expiration notification, it could
+be better to replace the expiration timers with syncronous code triggered periodically by the
+existing monitor.  That would possibly require an additional field added to the data model to track
+whether a particular item has already triggered an expiration notification, but it may have some
+performance advantage over the current implmentation, particularly if periodic notification of
+expired items is acceptable.  However, the current implemtation was chosen because it required
+very infrequent asyncronous data context interaction, limiting the possibility of concurrency
+issues.
 
 
