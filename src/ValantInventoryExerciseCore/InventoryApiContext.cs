@@ -21,11 +21,15 @@ namespace ValantInventoryExerciseCore
 
             foreach(var entry in ChangeTracker.Entries<Items>())
             {
+
+                
                 if (entry.State == EntityState.Deleted)
                 {
+                    //if the Item is to be deleted, remove its timer
                     ItemMonitor.RemoveScheduledExpiration(entry.Entity);
                 }else if(entry.State == EntityState.Added)
                 {
+                    //if this is a new Item, add a Timer
                     ItemMonitor.ScheduleExpiration(entry.Entity);
                 }
 

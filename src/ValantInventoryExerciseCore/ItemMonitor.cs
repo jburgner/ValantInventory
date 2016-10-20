@@ -9,8 +9,10 @@ namespace ValantInventoryExerciseCore
 {
     public class ItemMonitor
     {
-        //maintain task references to keep them from garbage collection
-        private readonly Dictionary<string, Timer> _taskReferences;
+        //Maintain task references to keep them from garbage collection
+        //and also to check if timer has already been set for a particular item.
+        //Item label is used for hash key.
+        private readonly Dictionary<string, Timer> _timerReferences;
         private readonly InventoryApiContext _context;
 
         private readonly TimeSpan _scheduleFromContextReRunInterval;
@@ -20,19 +22,22 @@ namespace ValantInventoryExerciseCore
 
         private TimerFactory _timerFactory;
 
-        public ItemMonitor(InventoryApiContext context, Dictionary<string, Timer> TaskReferences, TimerFactory TimerFactory)
+        public ItemMonitor(InventoryApiContext context, Dictionary<string, Timer> TimerReferences, TimerFactory TimerFactory)
         {
+            //initialize private variables
             _context = context;
-            _taskReferences = TaskReferences;
+            _timerReferences = TimerReferences;
             _timerFactory = TimerFactory;
 
             //run periodic monitoring addition weekly
             _scheduleFromContextReRunInterval = new TimeSpan(7, 0, 0, 0);
 
-            //the limit before which a task will be scheduled
-            //two days more than the re-run interval so the task will be rerun before the covered window expires
+            //the timer task will be scheduled to run weekly, but get set
+            //timers for any expirations dates within 9 days so the timer
+            //will be rerun before the covered window expires
             _taskScheduleLimit = _scheduleFromContextReRunInterval + new TimeSpan(2, 0, 0, 0);
 
+            //schedule recurring item monitor, which will schedule expiration task for each item about to expire
             _scheduledRunFromContextTimer = _timerFactory.CreateTimer(x =>
             {
                 ScheduleFromContext();
@@ -40,44 +45,52 @@ namespace ValantInventoryExerciseCore
 
         }
 
+        //Schedule the item passed in for expiration
         public void ScheduleExpiration(Items item)
         {
-
+            //the timespan between the item expiration and now
             TimeSpan timeSpan = item.Expiration.Subtract(DateTime.Now);
+
+            //if the item has already expired, schedule immediately
             if (timeSpan.Ticks < 0)
             {
                 timeSpan = new TimeSpan(0);
             }
-            if (!_taskReferences.ContainsKey(item.Label))
+            //if a timer has not already been set for this item
+            if (!_timerReferences.ContainsKey(item.Label))
             {
+                //do not schedule for item too far in advance
                 if (timeSpan <= _taskScheduleLimit)
                 {
-                    _taskReferences.Add(item.Label, _timerFactory.CreateTimer(x =>
+                    //schedule one-time timer and preserve reference in Dictionary
+                    _timerReferences.Add(item.Label, _timerFactory.CreateTimer(x =>
                     {
-                        TimerElapsed((Items)x);
+                        ItemExpired((Items)x);
                         
                     }, item, timeSpan, new TimeSpan(0,0,0,0,-1)));
                 }
             }
         }
 
-        private void TimerElapsed(Items item)
+        private void ItemExpired(Items item)
         {
             Console.WriteLine("Item " + item.Label + " expired at " + item.Expiration.ToString());
             //uncomment to enable removal of expired items
             //_context.RemoveRange(_context.Items.Where(i => i.Label == item.Label));
             //_context.SaveChanges();
-            _taskReferences.Remove(item.Label);
+
+            //remove timer reference from dictionary
+            _timerReferences.Remove(item.Label);
         }
 
         public void RemoveScheduledExpiration(Items item)
         {
-            //dispose and remove dictionary entry
+            //dispose timer and remove dictionary entry
             Timer timerToDispose;
-            if (_taskReferences.TryGetValue(item.Label, out timerToDispose))
+            if (_timerReferences.TryGetValue(item.Label, out timerToDispose))
             {
                 timerToDispose.Dispose();
-                _taskReferences.Remove(item.Label);
+                _timerReferences.Remove(item.Label);
             }
         }
 

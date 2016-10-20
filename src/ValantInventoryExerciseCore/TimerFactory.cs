@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace ValantInventoryExerciseCore
 {
+
+    // The purpose of this class is to be able to mock timer creation for testing
+    // via dependency injection. When the TimerFactory class is injected, the timer
+    // will be scheduled normally.  When the TestTimerFactory is injected, the callback
+    // will be invoked immediately.
+
     public class TimerFactory
     {
         public virtual Timer CreateTimer(TimerCallback callback, object state, int dueTime, int period )
@@ -19,6 +25,8 @@ namespace ValantInventoryExerciseCore
         }
     }
 
+
+    // Inherit from TimerFactory for injecting as TimerFactory
     public class TestTimerFactory : TimerFactory
     {
         public override Timer CreateTimer(TimerCallback callback, object state, int dueTime, int period)
