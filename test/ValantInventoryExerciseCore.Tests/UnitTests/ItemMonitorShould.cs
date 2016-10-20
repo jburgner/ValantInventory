@@ -9,10 +9,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using System.IO;
+using System.Threading;
 
 namespace Tests
 {
-    public class ItemsControllerShould
+    public class ItemMonitorShould
     {
 
         private InventoryApiContext SetUpContext(IEnumerable<Items> items)
@@ -22,7 +23,7 @@ namespace Tests
             var dbCOB = new DbContextOptionsBuilder<InventoryApiContext>();
 
             //use a different database for testing than the default in memory database
-            dbCOB.UseInMemoryDatabase("TestDB");
+            dbCOB.UseInMemoryDatabase("ItemMonitorTestDB");
 
             var mockContext = new InventoryApiContext(dbCOB.Options);
 
@@ -40,42 +41,126 @@ namespace Tests
 
         }
 
+        private ItemMonitor SetUpMonitor(InventoryApiContext context, Dictionary<string, Timer> TimerDictionary)
+        {
+            return new ItemMonitor(context, TimerDictionary, new TestTimerFactory());
+        }
+
+
         [Fact]
-        public void ReturnAViewResult_OfOK_FromDeleteByLabel_WhenLabelExists() 
+        public void ScheduleATask_ToWriteToConsole_When_ScheduleExpiration_IsCalled() 
         {
 
             //Arrange
-            var actionLabel = "DeleteMe!";
+            var actionLabel = "NotifyMe!";
             
-            var itemToDelete = new Items
+            var itemToExpire = new Items
             {
                 Label = actionLabel,
-                Expiration = DateTime.UtcNow.AddYears(1),
+                Expiration = DateTime.Now.AddDays(-1),
+                ItemType = 1
+
+            };
+            var itemToNotExpire = new Items { Label = "Don't Notify Me!", Expiration = DateTime.Now.AddYears(1), ItemType = 1 };
+            var data = new List<Items>
+            {
+                itemToExpire,
+                itemToNotExpire
+            }.AsQueryable();
+
+            var stExpectedConsoleOut = "Item " + itemToExpire.Label + " expired at ";
+
+            var stringWriter = new StringWriter();
+            Console.SetOut(stringWriter);
+
+            var mockContext = SetUpContext(data);
+            var TimersDict = new Dictionary<string, Timer>();
+            var mockMonitor = SetUpMonitor(mockContext, TimersDict);
+
+            //Action
+            mockMonitor.ScheduleExpiration(itemToExpire);
+            mockMonitor.ScheduleExpiration(itemToNotExpire);
+
+            //Assert
+            Assert.True(TimersDict.ContainsKey(itemToExpire.Label));
+            Assert.Equal(stExpectedConsoleOut, stringWriter.ToString().Substring(0, stExpectedConsoleOut.Length));
+            Assert.DoesNotContain(itemToNotExpire.Label, stringWriter.ToString());
+        }
+
+        [Fact]
+        public void RemoveATask_When_RemoveScheduledExpiration_IsCalled()
+        {
+
+            //Arrange
+            var actionLabel = "NotifyMe!";
+
+            var itemToExpire = new Items
+            {
+                Label = actionLabel,
+                Expiration = DateTime.Now.AddDays(-1),
                 ItemType = 1
 
             };
             var data = new List<Items>
             {
-                itemToDelete,
-
-                new Items { Label = "Don't Delete Me!", Expiration = DateTime.UtcNow.AddYears(1), ItemType = 1 }
+                itemToExpire,
+                new Items { Label = "Don't Notify Me!", Expiration = DateTime.Now.AddYears(1), ItemType = 1 }
             }.AsQueryable();
 
-            var stExpectedConsoleOut = "Item " + itemToDelete.Label + " removed from inventory at ";
-
-            var stringWriter = new StringWriter();
             var mockContext = SetUpContext(data);
-            var itemsController = new ItemsController(mockContext, stringWriter);
+            var TimersDict = new Dictionary<string, Timer>();
+            var mockMonitor = SetUpMonitor(mockContext, TimersDict);
 
             //Action
-            var result = itemsController.Delete(actionLabel);
+            mockMonitor.ScheduleExpiration(itemToExpire);
+            mockMonitor.RemoveScheduledExpiration(itemToExpire);
 
             //Assert
-            Assert.IsType<OkResult>(result);
-            Assert.Equal(stExpectedConsoleOut, stringWriter.ToString().Substring(0, stExpectedConsoleOut.Length));
+            Assert.False(TimersDict.ContainsKey(itemToExpire.Label));
         }
 
         [Fact]
+        public void ScheduleAllRelevantItems_ForExpiration_When_Instantiated()
+        {
+
+            //Arrange
+            var actionLabel = "NotifyMe!";
+
+            var itemToExpire1 = new Items
+            {
+                Label = actionLabel,
+                Expiration = DateTime.Now.AddDays(-1),
+                ItemType = 1
+
+            };
+            var itemToExpire2 = new Items { Label = "Also Notify Me!", Expiration = DateTime.Now.AddDays(1), ItemType = 1 };
+            var itemToNotExpire = new Items { Label = "Don't Notify Me!", Expiration = DateTime.Now.AddYears(1), ItemType = 1 };
+            var data = new List<Items>
+            {
+                itemToExpire1,
+                itemToExpire2,
+                itemToNotExpire
+            }.AsQueryable();
+
+            var stExpectedConsoleOut1 = "Item " + itemToExpire1.Label + " expired at ";
+            var stExpectedConsoleOut2 = "Item " + itemToExpire2.Label + " expired at ";
+            var stringWriter = new StringWriter();
+            Console.SetOut(stringWriter);
+
+            var mockContext = SetUpContext(data);
+            var TimersDict = new Dictionary<string, Timer>();
+
+            //Action
+            var mockMonitor = SetUpMonitor(mockContext, TimersDict);
+            var stOutput = stringWriter.ToString();
+
+            //Assert
+            Assert.Contains(stExpectedConsoleOut1, stOutput);
+            Assert.Contains(stExpectedConsoleOut2, stOutput);
+            Assert.DoesNotContain(itemToNotExpire.Label, stOutput);
+        }
+
+        /*[Fact]
         public void DeleteItem_FromDeleteByLabel_WhenLabelExists()
         {
 
@@ -85,14 +170,14 @@ namespace Tests
             var itemToDelete = new Items
             {
                 Label = actionLabel,
-                Expiration = DateTime.UtcNow.AddYears(1),
+                Expiration = DateTime.Now.AddDays(1),
                 ItemType = 1
 
             };
             var data = new List<Items>
             {
                 itemToDelete,
-                new Items { Label = "Don't Delete Me!", Expiration = DateTime.UtcNow.AddYears(1), ItemType = 1 }
+                new Items { Label = "Don't Delete Me!", Expiration = DateTime.Now.AddYears(1), ItemType = 1 }
             }.AsQueryable();
 
             var mockContext = SetUpContext(data);
@@ -116,14 +201,14 @@ namespace Tests
             var itemToDelete = new Items
             {
                 Label = actionLabel,
-                Expiration = DateTime.UtcNow.AddYears(1),
+                Expiration = DateTime.Now.AddYears(1),
                 ItemType = 1
 
             };
             var data = new List<Items>
             {
                 itemToDelete,
-                new Items { Label = "Don't Delete Me!", Expiration = DateTime.UtcNow.AddYears(1), ItemType = 1 }
+                new Items { Label = "Don't Delete Me!", Expiration = DateTime.Now.AddYears(1), ItemType = 1 }
             }.AsQueryable();
 
             var mockContext = SetUpContext(data);
@@ -146,7 +231,7 @@ namespace Tests
             var itemToAdd = new Items
             {
                 Label = "Add Me",
-                Expiration = DateTime.UtcNow.AddYears(1),
+                Expiration = DateTime.Now.AddYears(1),
                 ItemType = 1
 
             };
@@ -169,7 +254,7 @@ namespace Tests
             var itemToAdd = new Items
             {
                 Label = "Add Me",
-                Expiration = DateTime.UtcNow.AddYears(1),
+                Expiration = DateTime.Now.AddDays(1),
                 ItemType = 1
 
             };
@@ -192,7 +277,7 @@ namespace Tests
             var itemToAdd = new Items
             {
                 Label = "Add Me",
-                Expiration = DateTime.UtcNow.AddYears(1),
+                Expiration = DateTime.Now.AddDays(1),
                 ItemType = 1
 
             };
@@ -208,7 +293,7 @@ namespace Tests
             Assert.Equal(scr.StatusCode, 409);
             //verify that no records were added to database
             Assert.Equal(1, mockContext.Items.Count());
-        }
+        }*/
 
         //Moved to Integration tests since Controller not correct context for monitoring expirations
         /*[Fact]
@@ -218,7 +303,7 @@ namespace Tests
             var itemToAdd = new Items
             {
                 Label = "Add Me",
-                Expiration = DateTime.UtcNow.AddSeconds(-1),
+                Expiration = DateTime.Now.AddSeconds(-1),
                 ItemType = 1
 
             };

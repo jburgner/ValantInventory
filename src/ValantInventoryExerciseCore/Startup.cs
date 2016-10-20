@@ -40,6 +40,7 @@ namespace ValantInventoryExerciseCore
             //change this line in order to use a more suitable long-term data store (e.g. Redis)
             services.AddDbContext<InventoryApiContext>(opt => opt.UseInMemoryDatabase());
 
+
             services.AddMvc();
         }
 
@@ -57,8 +58,6 @@ namespace ValantInventoryExerciseCore
 
             //SeedTestData(context);
 
-            MonitorItemsForExpired(context);
-
             app.UseMvc();
         }
 
@@ -68,7 +67,7 @@ namespace ValantInventoryExerciseCore
             var testItem1 = new Models.Items
             {
                 Label = "TestLabel1",
-                Expiration = DateTime.UtcNow.AddYears(1),
+                Expiration = DateTime.Now.AddYears(1),
                 ItemType = 1
             };
             context.Items.Add(testItem1);
@@ -76,40 +75,11 @@ namespace ValantInventoryExerciseCore
             var testItem2 = new Models.Items
             {
                 Label = "TestLabel2",
-                Expiration = DateTime.UtcNow.AddYears(1),
+                Expiration = DateTime.Now.AddYears(1),
                 ItemType = 1
             };
             context.Items.Add(testItem2);
             context.SaveChanges();
         }
-
-
-        //monitor item expirations and delete any expired items
-        private static void MonitorItemsForExpired(InventoryApiContext context)
-        {
-            //The interval on which to check for expired items.
-            //There could be concurrency issues if the interval is too short.
-            //If no concurrency checking is implemented, then this interval
-            //may need to be increased as the dataset grows.
-            const int _expirationCheckInterval = 5000;
-
-            Timer timer = new Timer(async (callbackState) => {
-
-                var callbackContext = (InventoryApiContext)callbackState;
-
-                var itemsToRemove = await callbackContext.Items.Where(i => i.Expiration < DateTime.UtcNow).ToListAsync();
-
-                callbackContext.Items.RemoveRange(itemsToRemove);
-                itemsToRemove
-                    .ForEach(i =>
-                        Console.WriteLine("Item " + i.Label + " expired at " + i.Expiration.ToString())
-                    );
-                await callbackContext.SaveChangesAsync();
-
-
-            }, context, _expirationCheckInterval, _expirationCheckInterval);
-
-        }
-
     }
 }

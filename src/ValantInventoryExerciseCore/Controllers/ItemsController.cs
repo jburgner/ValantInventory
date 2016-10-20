@@ -16,7 +16,6 @@ namespace ValantInventoryExerciseCore.Controllers
 
         private readonly InventoryApiContext _context;
         private readonly TextWriter _writer;
-        
 
         // The optional parameter for the injection of a writer dependency is for the
         // testing of console output.
@@ -60,7 +59,7 @@ namespace ValantInventoryExerciseCore.Controllers
                 _context.Items.Remove(item);
                 _context.SaveChanges();
 
-                Console.WriteLine("Item " + Label + " removed from inventory at " + DateTime.UtcNow);
+                Console.WriteLine("Item " + Label + " removed from inventory at " + DateTime.Now);
 
                 return Ok();
             }
