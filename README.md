@@ -59,6 +59,8 @@ whether a particular item has already triggered an expiration notification, but 
 performance advantage over the current implmentation, particularly if periodic notification of
 expired items is acceptable.  However, the current implementation was chosen because it required
 very infrequent asyncronous data context interaction, and only asyncronous reads, limiting the
-possibility of concurrency issues.
+possibility of concurrency issues.  Update: with the addition of the specification to delete expired
+items, the concurrency advantage of the current implementation is negated, and periodic rather than
+timered expirations is probably preferable.
 
 
