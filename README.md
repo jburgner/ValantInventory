@@ -57,8 +57,8 @@ be better to replace the expiration timers with syncronous code triggered period
 existing monitor.  That would possibly require an additional field added to the data model to track
 whether a particular item has already triggered an expiration notification, but it may have some
 performance advantage over the current implmentation, particularly if periodic notification of
-expired items is acceptable.  However, the current implemtation was chosen because it required
-very infrequent asyncronous data context interaction, limiting the possibility of concurrency
-issues.
+expired items is acceptable.  However, the current implementation was chosen because it required
+very infrequent asyncronous data context interaction, and only asyncronous reads, limiting the
+possibility of concurrency issues.
 
 
