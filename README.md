@@ -6,7 +6,7 @@ ASP.NET Core
 
 Entity Framework Core
 
-InMemory
+InMemory database
 
 xUnit
 
