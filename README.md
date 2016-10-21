@@ -44,13 +44,13 @@ will need to be investigated.  The Entity Framework queries are conducted syncro
 in-memory database responsiveness.  Once final data store is implemented, testing will need to
 be conducted to determine if async/await is appropriate for data store operations.
 
-The monitoring of expired items is handled in the ItemMonitor class, instantiated in the database
-context using dependency injection.  Every monitoring period (currently configured for an interval
-of 7 days), a timer is set for every item set to expire within the next interval + 2 days (currently
-9 days).  When the timer is triggered, a message is written to the console.  Newly added items are
-given their own timer if they fall within the configured interval.  Newly deleted items have their
-timer cancelled if they have one.  Timers are tested by mocking timers through a timer factory.
-Mock timers invoke their callback syncronously at instantiation. 
+The monitoring of expired items is handled in the ItemMonitor class, registered as a service in
+Startup.cs.  Every monitoring period (currently configured for an interval of 7 days), a timer
+is set for every item set to expire within the next interval + 2 days (currently 9 days).  When
+the timer is triggered, a message is written to the logger.  Newly added items are given their
+own timer if they fall within the configured interval.  Newly deleted items have their timer
+cancelled if they have one.  Timers are tested by mocking timers through a timer factory. Mock
+timers invoke their callback syncronously at instantiation. 
 
 Depending on usage profile and the immediacy requirements of the expiration notification, it could
 be better to replace the expiration timers with syncronous code triggered periodically by the
@@ -61,6 +61,6 @@ expired items is acceptable.  However, the current implementation was chosen bec
 very infrequent asyncronous data context interaction, and only asyncronous reads, limiting the
 possibility of concurrency issues.  Update: with the addition of the specification to delete expired
 items, the concurrency advantage of the current implementation is negated, and periodic rather than
-timered expirations is probably preferable.
+timered expirations is probably preferable, but has not yet been implemented.
 
 
