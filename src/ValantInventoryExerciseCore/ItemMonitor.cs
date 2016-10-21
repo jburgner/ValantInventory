@@ -29,7 +29,7 @@ namespace ValantInventoryExerciseCore
 
         private Timer _scheduledRunFromContextTimer;
 
-        private TimerFactory _timerFactory;
+        private ITimerFactory _timerFactory;
 
         private ILogger _logger;
 
@@ -40,7 +40,7 @@ namespace ValantInventoryExerciseCore
             //initialize private variables
             _context = context;
             TimerReferences = new Dictionary<string, Timer>();
-            _timerFactory = (TimerFactory)TimerFactory;
+            _timerFactory = TimerFactory;
             _logger = loggerFactory.CreateLogger<ItemMonitor>();
 
             //run periodic monitoring addition weekly

@@ -18,7 +18,7 @@ namespace ValantInventoryExerciseCore.Controllers
 
         private readonly InventoryApiContext _context;
         private readonly TextWriter _writer;
-        private readonly ItemMonitor _itemMonitor;
+        private readonly IItemMonitor _itemMonitor;
 
         private readonly ILogger _logger;
 
@@ -28,7 +28,7 @@ namespace ValantInventoryExerciseCore.Controllers
         {
             _logger = loggerFactory.CreateLogger<ItemsController>();
             _context = context;
-            _itemMonitor = (ItemMonitor)ItemMonitor;
+            _itemMonitor = ItemMonitor;
         }
 
         //not yet implemented
