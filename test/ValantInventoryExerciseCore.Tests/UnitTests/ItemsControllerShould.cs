@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using System.IO;
+using Microsoft.Extensions.Logging;
 
 namespace Tests
 {
@@ -62,9 +63,11 @@ namespace Tests
 
             var stExpectedConsoleOut = "Item " + itemToDelete.Label + " removed from inventory at ";
 
+            var loggerFactory = new LoggerFactory();
             var stringWriter = new StringWriter();
+            Console.SetOut(stringWriter);
             var mockContext = SetUpContext(data);
-            var itemsController = new ItemsController(mockContext, stringWriter);
+            var itemsController = new ItemsController(mockContext, new ItemMonitor(mockContext, new TimerFactory(), loggerFactory), loggerFactory);
 
             //Action
             var result = itemsController.Delete(actionLabel);
@@ -94,8 +97,9 @@ namespace Tests
                 new Items { Label = "Don't Delete Me!", Expiration = DateTime.Now.AddYears(1), ItemType = 1 }
             }.AsQueryable();
 
+            var loggerFactory = new LoggerFactory();
             var mockContext = SetUpContext(data);
-            var itemsController = new ItemsController(mockContext);
+            var itemsController = new ItemsController(mockContext, new ItemMonitor(mockContext, new TimerFactory(), loggerFactory), loggerFactory);
 
             //Action
             var result = itemsController.Delete(actionLabel);
@@ -125,8 +129,9 @@ namespace Tests
                 new Items { Label = "Don't Delete Me!", Expiration = DateTime.Now.AddYears(1), ItemType = 1 }
             }.AsQueryable();
 
+            var loggerFactory = new LoggerFactory();
             var mockContext = SetUpContext(data);
-            var itemsController = new ItemsController(mockContext);
+            var itemsController = new ItemsController(mockContext, new ItemMonitor(mockContext, new TimerFactory(), loggerFactory), loggerFactory);
 
             //Action
             var result = itemsController.Delete("NonexistentLabel");
@@ -150,8 +155,9 @@ namespace Tests
 
             };
 
+            var loggerFactory = new LoggerFactory();
             var mockContext = SetUpContext(null);
-            var itemsController = new ItemsController(mockContext);
+            var itemsController = new ItemsController(mockContext, new ItemMonitor(mockContext, new TimerFactory(), loggerFactory), loggerFactory);
 
             //Action
             var result = itemsController.Post(itemToAdd);
@@ -162,7 +168,7 @@ namespace Tests
         }
 
         [Fact]
-        public void ReturnsStatusCode_ofCreated_FromPostNewItem_()
+        public void ReturnsStatusCode_ofCreated_FromPostNewItem()
         {
             //Arrange
             var itemToAdd = new Items
@@ -173,15 +179,16 @@ namespace Tests
 
             };
 
+            var loggerFactory = new LoggerFactory();
             var mockContext = SetUpContext(null);
-            var itemsController = new ItemsController(mockContext);
+            var itemsController = new ItemsController(mockContext, new ItemMonitor(mockContext, new TimerFactory(), loggerFactory), loggerFactory);
 
             //Action
             var result = itemsController.Post(itemToAdd);
 
             //Assert
             StatusCodeResult scr = Assert.IsType<StatusCodeResult>(result);
-            Assert.Equal(scr.StatusCode, 201);
+            Assert.Equal(201, scr.StatusCode);
         }
 
         [Fact]
@@ -196,46 +203,42 @@ namespace Tests
 
             };
 
+            var loggerFactory = new LoggerFactory();
             var mockContext = SetUpContext(new List<Items> { itemToAdd });
-            var itemsController = new ItemsController(mockContext);
+            var itemsController = new ItemsController(mockContext, new ItemMonitor(mockContext, new TimerFactory(), loggerFactory), loggerFactory);
 
             //Action
             var result = itemsController.Post(itemToAdd);
 
             //Assert
             StatusCodeResult scr = Assert.IsType<StatusCodeResult>(result);
-            Assert.Equal(scr.StatusCode, 409);
+            Assert.Equal(409, scr.StatusCode);
             //verify that no records were added to database
             Assert.Equal(1, mockContext.Items.Count());
         }
 
-        //Moved to Integration tests since Controller not correct context for monitoring expirations
-        /*[Fact]
-        public async Task ItemExpiring_Triggers_NotificationToConsole()
+        [Fact]
+        public void ReturnsStatusCode_ofBadRequest_FromPostNewItem_WhenItemAlreadyExpired()
         {
             //Arrange
             var itemToAdd = new Items
             {
                 Label = "Add Me",
-                Expiration = DateTime.Now.AddSeconds(-1),
+                Expiration = DateTime.Now.AddDays(-1),
                 ItemType = 1
 
             };
 
-            var stExpectedConsoleOut = "Item " + itemToAdd.Label + " expired at ";
-
-            var stringWriter = new StringWriter();
-            var mockContext = SetUpContext(new List<Items> { itemToAdd });
-            var itemsController = new ItemsController(mockContext, 2, stringWriter);
+            var loggerFactory = new LoggerFactory();
+            var mockContext = SetUpContext(null);
+            var itemsController = new ItemsController(mockContext, new ItemMonitor(mockContext, new TimerFactory(), loggerFactory), loggerFactory);
 
             //Action
             var result = itemsController.Post(itemToAdd);
-            await Task.Delay(3000);
 
             //Assert
-            Assert.Equal(0, mockContext.Items.Count());
-            Assert.Equal(stExpectedConsoleOut, stringWriter.ToString().Substring(0, stExpectedConsoleOut.Length));
-            
-        }*/
+            StatusCodeResult scr = Assert.IsType<StatusCodeResult>(result);
+            Assert.Equal(400, scr.StatusCode);
+        }
     }
 }

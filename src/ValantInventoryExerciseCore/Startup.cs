@@ -40,8 +40,10 @@ namespace ValantInventoryExerciseCore
             //change this line in order to use a more suitable long-term data store (e.g. Redis)
             services.AddDbContext<InventoryApiContext>(opt => opt.UseInMemoryDatabase());
 
-
             services.AddMvc();
+
+            services.AddTransient<ITimerFactory, TimerFactory>();
+            services.AddSingleton<IItemMonitor, ItemMonitor>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline

@@ -10,6 +10,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using System.IO;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Tests
 {
@@ -41,9 +42,9 @@ namespace Tests
 
         }
 
-        private ItemMonitor SetUpMonitor(InventoryApiContext context, Dictionary<string, Timer> TimerDictionary)
+        private ItemMonitor SetUpMonitor(InventoryApiContext context, ILoggerFactory loggerFactory)
         {
-            return new ItemMonitor(context, TimerDictionary, new TestTimerFactory());
+            return new ItemMonitor(context, new TestTimerFactory(), loggerFactory);
         }
 
 
@@ -75,16 +76,17 @@ namespace Tests
 
             var mockContext = SetUpContext(data);
             var TimersDict = new Dictionary<string, Timer>();
-            var mockMonitor = SetUpMonitor(mockContext, TimersDict);
+            var mockMonitor = SetUpMonitor(mockContext, new LoggerFactory());
 
             //Action
             mockMonitor.ScheduleExpiration(itemToExpire);
             mockMonitor.ScheduleExpiration(itemToNotExpire);
 
             //Assert
-            Assert.True(TimersDict.ContainsKey(itemToExpire.Label));
+            Assert.True(mockMonitor.TimerReferences.ContainsKey(itemToExpire.Label));
             Assert.Equal(stExpectedConsoleOut, stringWriter.ToString().Substring(0, stExpectedConsoleOut.Length));
             Assert.DoesNotContain(itemToNotExpire.Label, stringWriter.ToString());
+            Assert.Equal(1, mockContext.Items.Count());
         }
 
         [Fact]
@@ -109,7 +111,7 @@ namespace Tests
 
             var mockContext = SetUpContext(data);
             var TimersDict = new Dictionary<string, Timer>();
-            var mockMonitor = SetUpMonitor(mockContext, TimersDict);
+            var mockMonitor = SetUpMonitor(mockContext, new LoggerFactory());
 
             //Action
             mockMonitor.ScheduleExpiration(itemToExpire);
@@ -151,13 +153,14 @@ namespace Tests
             var TimersDict = new Dictionary<string, Timer>();
 
             //Action
-            var mockMonitor = SetUpMonitor(mockContext, TimersDict);
+            var mockMonitor = SetUpMonitor(mockContext, new LoggerFactory());
             var stOutput = stringWriter.ToString();
 
             //Assert
-            Assert.Contains(stExpectedConsoleOut1, stOutput);
+            Assert.DoesNotContain(stExpectedConsoleOut1, stOutput);
             Assert.Contains(stExpectedConsoleOut2, stOutput);
             Assert.DoesNotContain(itemToNotExpire.Label, stOutput);
+            Assert.Equal(2, mockContext.Items.Count());
         }
 
         /*[Fact]
@@ -190,9 +193,7 @@ namespace Tests
             Assert.Equal(1, mockContext.Items.Count());
             Assert.NotEqual(actionLabel, mockContext.Items.First().Label);
         }
-
-        [Fact]
-        public void ReturnAViewResult_OfNotFound_FromDeleteByLabel_WhenLabelDoesntExists()
+                public void ReturnAViewResult_OfNotFound_FromDeleteByLabel_WhenLabelDoesntExists()
         {
 
             //Arrange
@@ -235,7 +236,6 @@ namespace Tests
                 ItemType = 1
 
             };
-
             var mockContext = SetUpContext(null);
             var itemsController = new ItemsController(mockContext);
 
@@ -279,7 +279,6 @@ namespace Tests
                 Label = "Add Me",
                 Expiration = DateTime.Now.AddDays(1),
                 ItemType = 1
-
             };
 
             var mockContext = SetUpContext(new List<Items> { itemToAdd });
@@ -323,5 +322,5 @@ namespace Tests
             Assert.Equal(stExpectedConsoleOut, stringWriter.ToString().Substring(0, stExpectedConsoleOut.Length));
             
         }*/
-    }
+   }
 }

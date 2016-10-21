@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using System.IO;
 using System.Threading;
 using ValantInventoryExerciseCore.Models;
+using Microsoft.Extensions.Logging;
+using System.Net;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -16,17 +18,17 @@ namespace ValantInventoryExerciseCore.Controllers
 
         private readonly InventoryApiContext _context;
         private readonly TextWriter _writer;
+        private readonly ItemMonitor _itemMonitor;
+
+        private readonly ILogger _logger;
 
         // The optional parameter for the injection of a writer dependency is for the
         // testing of console output.
-        public ItemsController(InventoryApiContext context, TextWriter writer = null)
+        public ItemsController(InventoryApiContext context, IItemMonitor ItemMonitor, ILoggerFactory loggerFactory)
         {
-            if(!Object.ReferenceEquals(null, writer)) { 
-                _writer = writer;
-                Console.SetOut(writer);
-            }
-  
+            _logger = loggerFactory.CreateLogger<ItemsController>();
             _context = context;
+            _itemMonitor = (ItemMonitor)ItemMonitor;
         }
 
         //not yet implemented
@@ -59,7 +61,11 @@ namespace ValantInventoryExerciseCore.Controllers
                 _context.Items.Remove(item);
                 _context.SaveChanges();
 
-                Console.WriteLine("Item " + Label + " removed from inventory at " + DateTime.Now);
+                var stMessage = "Item " + Label + " removed from inventory at " + DateTime.Now;
+                Console.WriteLine(stMessage);
+                _logger.LogInformation(stMessage);
+                //Item is to be deleted, remove its timer
+                _itemMonitor.RemoveScheduledExpiration(item);
 
                 return Ok();
             }
@@ -74,17 +80,31 @@ namespace ValantInventoryExerciseCore.Controllers
         public IActionResult Post([FromBody]Items item)
         {
             //TODO: test async/await for performance with large datasets and heavy traffic
+            //check for uniqueness of label
             if (_context.Items.Where(i => i.Label.Equals(item.Label)).Count() == 0)
             {
+                //If the item has not yet expired
+                if(item.Expiration > DateTime.Now)
+                {
+                    _context.Items.Add(item);
+                    _context.SaveChanges();
 
-                _context.Items.Add(item);
-                _context.SaveChanges();
+                    //New Item, add an expiration Timer
+                    _itemMonitor.ScheduleExpiration(item);
 
-                //Get action not yet implemented, so reference to GetItem wouldn't be appropriate
-                //return this.CreatedAtRoute("GetItem", new { controller = "Items", Label = item.Label }, item);
-                return StatusCode(201);
-            }else
+                    //Get action not yet implemented, so reference to GetItem wouldn't be appropriate
+                    //return this.CreatedAtRoute("GetItem", new { controller = "Items", Label = item.Label }, item);
+                    return StatusCode(201);
+
+                }else
+                {
+                    //Item has already expired.  Return Bad Request.
+                    return StatusCode(400);
+                }
+            }
+            else
             {
+                //An item with this label already exists.  Return Conflict.
                 return StatusCode(409);
             }
         }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -7,12 +8,20 @@ using ValantInventoryExerciseCore.Models;
 
 namespace ValantInventoryExerciseCore
 {
-    public class ItemMonitor
+
+    public interface IItemMonitor
     {
+        void ScheduleExpiration(Items item);
+        void RemoveScheduledExpiration(Items item);
+    }
+
+    public class ItemMonitor : IItemMonitor
+    {
+
         //Maintain task references to keep them from garbage collection
         //and also to check if timer has already been set for a particular item.
         //Item label is used for hash key.
-        private readonly Dictionary<string, Timer> _timerReferences;
+        //private readonly Dictionary<string, Timer> _timerReferences;
         private readonly InventoryApiContext _context;
 
         private readonly TimeSpan _scheduleFromContextReRunInterval;
@@ -22,12 +31,17 @@ namespace ValantInventoryExerciseCore
 
         private TimerFactory _timerFactory;
 
-        public ItemMonitor(InventoryApiContext context, Dictionary<string, Timer> TimerReferences, TimerFactory TimerFactory)
+        private ILogger _logger;
+
+        public Dictionary<string, Timer> TimerReferences { get; }
+
+        public ItemMonitor(InventoryApiContext context, ITimerFactory TimerFactory, ILoggerFactory loggerFactory)
         {
             //initialize private variables
             _context = context;
-            _timerReferences = TimerReferences;
-            _timerFactory = TimerFactory;
+            TimerReferences = new Dictionary<string, Timer>();
+            _timerFactory = (TimerFactory)TimerFactory;
+            _logger = loggerFactory.CreateLogger<ItemMonitor>();
 
             //run periodic monitoring addition weekly
             _scheduleFromContextReRunInterval = new TimeSpan(7, 0, 0, 0);
@@ -57,13 +71,13 @@ namespace ValantInventoryExerciseCore
                 timeSpan = new TimeSpan(0);
             }
             //if a timer has not already been set for this item
-            if (!_timerReferences.ContainsKey(item.Label))
+            if (!TimerReferences.ContainsKey(item.Label))
             {
                 //do not schedule for item too far in advance
                 if (timeSpan <= _taskScheduleLimit)
                 {
                     //schedule one-time timer and preserve reference in Dictionary
-                    _timerReferences.Add(item.Label, _timerFactory.CreateTimer(x =>
+                    TimerReferences.Add(item.Label, _timerFactory.CreateTimer(x =>
                     {
                         ItemExpired((Items)x);
                         
@@ -74,23 +88,24 @@ namespace ValantInventoryExerciseCore
 
         private void ItemExpired(Items item)
         {
-            Console.WriteLine("Item " + item.Label + " expired at " + item.Expiration.ToString());
-            //uncomment to enable removal of expired items
-            //_context.RemoveRange(_context.Items.Where(i => i.Label == item.Label));
-            //_context.SaveChanges();
+            var stMessage = "Item " + item.Label + " expired at " + item.Expiration.ToString();
+            Console.WriteLine(stMessage);
+            _logger.LogInformation(stMessage);
+            _context.Remove(item);
+            _context.SaveChanges();
 
             //remove timer reference from dictionary
-            _timerReferences.Remove(item.Label);
+            TimerReferences.Remove(item.Label);
         }
 
         public void RemoveScheduledExpiration(Items item)
         {
             //dispose timer and remove dictionary entry
             Timer timerToDispose;
-            if (_timerReferences.TryGetValue(item.Label, out timerToDispose))
+            if (TimerReferences.TryGetValue(item.Label, out timerToDispose))
             {
                 timerToDispose.Dispose();
-                _timerReferences.Remove(item.Label);
+                TimerReferences.Remove(item.Label);
             }
         }
 

@@ -12,7 +12,13 @@ namespace ValantInventoryExerciseCore
     // will be scheduled normally.  When the TestTimerFactory is injected, the callback
     // will be invoked immediately.
 
-    public class TimerFactory
+    public interface ITimerFactory
+    {
+        Timer CreateTimer(TimerCallback callback, object state, int dueTime, int period);
+        Timer CreateTimer(TimerCallback callback, object state, TimeSpan dueTime, TimeSpan period);
+    }
+
+    public class TimerFactory : ITimerFactory
     {
         public virtual Timer CreateTimer(TimerCallback callback, object state, int dueTime, int period )
         {
