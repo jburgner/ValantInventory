@@ -10,6 +10,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using System.IO;
 using Microsoft.Extensions.Logging;
+using ValantInventoryExerciseCore.Tests;
 
 namespace Tests
 {
@@ -63,9 +64,7 @@ namespace Tests
 
             var stExpectedConsoleOut = "Item " + itemToDelete.Label + " removed from inventory at ";
 
-            var loggerFactory = new LoggerFactory();
-            var stringWriter = new StringWriter();
-            Console.SetOut(stringWriter);
+            var loggerFactory = new TestLoggerFactory();
             var mockContext = SetUpContext(data);
             var itemsController = new ItemsController(mockContext, new ItemMonitor(mockContext, new TimerFactory(), loggerFactory), loggerFactory);
 
@@ -74,7 +73,7 @@ namespace Tests
 
             //Assert
             Assert.IsType<OkResult>(result);
-            Assert.Contains(stExpectedConsoleOut, stringWriter.ToString());
+            Assert.Contains(stExpectedConsoleOut, loggerFactory.Logger.Message);
         }
 
         [Fact]

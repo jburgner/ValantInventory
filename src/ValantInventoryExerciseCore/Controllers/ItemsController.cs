@@ -62,7 +62,6 @@ namespace ValantInventoryExerciseCore.Controllers
                 _context.SaveChanges();
 
                 var stMessage = "Item " + Label + " removed from inventory at " + DateTime.Now;
-                Console.WriteLine(stMessage);
                 _logger.LogInformation(stMessage);
                 //Item is to be deleted, remove its timer
                 _itemMonitor.RemoveScheduledExpiration(item);

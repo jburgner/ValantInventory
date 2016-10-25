@@ -89,7 +89,6 @@ namespace ValantInventoryExerciseCore
         private void ItemExpired(Items item)
         {
             var stMessage = "Item " + item.Label + " expired at " + item.Expiration.ToString();
-            Console.WriteLine(stMessage);
             _logger.LogInformation(stMessage);
             _context.Remove(item);
             _context.SaveChanges();

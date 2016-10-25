@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.IO;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using ValantInventoryExerciseCore.Tests;
 
 namespace Tests
 {
@@ -71,12 +72,11 @@ namespace Tests
 
             var stExpectedConsoleOut = "Item " + itemToExpire.Label + " expired at ";
 
-            var stringWriter = new StringWriter();
-            Console.SetOut(stringWriter);
 
             var mockContext = SetUpContext(data);
             var TimersDict = new Dictionary<string, Timer>();
-            var mockMonitor = SetUpMonitor(mockContext, new LoggerFactory());
+            var loggerFactory = new TestLoggerFactory();
+            var mockMonitor = SetUpMonitor(mockContext, loggerFactory);
 
             //Action
             mockMonitor.ScheduleExpiration(itemToExpire);
@@ -84,8 +84,8 @@ namespace Tests
 
             //Assert
             Assert.True(mockMonitor.TimerReferences.ContainsKey(itemToExpire.Label));
-            Assert.Equal(stExpectedConsoleOut, stringWriter.ToString().Substring(0, stExpectedConsoleOut.Length));
-            Assert.DoesNotContain(itemToNotExpire.Label, stringWriter.ToString());
+            Assert.Contains(stExpectedConsoleOut, loggerFactory.Logger.Message);
+            Assert.DoesNotContain(itemToNotExpire.Label, loggerFactory.Logger.Message);
             Assert.Equal(1, mockContext.Items.Count());
         }
 
@@ -146,20 +146,18 @@ namespace Tests
 
             var stExpectedConsoleOut1 = "Item " + itemToExpire1.Label + " expired at ";
             var stExpectedConsoleOut2 = "Item " + itemToExpire2.Label + " expired at ";
-            var stringWriter = new StringWriter();
-            Console.SetOut(stringWriter);
 
             var mockContext = SetUpContext(data);
             var TimersDict = new Dictionary<string, Timer>();
+            var loggerFactory = new TestLoggerFactory();
 
             //Action
-            var mockMonitor = SetUpMonitor(mockContext, new LoggerFactory());
-            var stOutput = stringWriter.ToString();
+            var mockMonitor = SetUpMonitor(mockContext, loggerFactory);
 
             //Assert
-            Assert.DoesNotContain(stExpectedConsoleOut1, stOutput);
-            Assert.Contains(stExpectedConsoleOut2, stOutput);
-            Assert.DoesNotContain(itemToNotExpire.Label, stOutput);
+            Assert.DoesNotContain(stExpectedConsoleOut1, loggerFactory.Logger.Message);
+            Assert.Contains(stExpectedConsoleOut2, loggerFactory.Logger.Message);
+            Assert.DoesNotContain(itemToNotExpire.Label, loggerFactory.Logger.Message);
             Assert.Equal(2, mockContext.Items.Count());
         }
 
