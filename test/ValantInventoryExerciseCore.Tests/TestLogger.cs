@@ -32,8 +32,10 @@ namespace ValantInventoryExerciseCore.Tests
             return true;
         }
 
+        //required by ILogger interface
         public IDisposable BeginScope<TState>(TState state)
         {
+            //incorrect, but class is just for mocking, so shouldn't be used
             return (IDisposable)state;
         }
     }
